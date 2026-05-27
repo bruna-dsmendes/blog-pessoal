@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.generation.blogpessoal.model.Postagem;
 import com.generation.blogpessoal.repository.PostagemRepository;
+import com.generation.blogpessoal.repository.TemaRepository;
 
 import jakarta.validation.Valid;
 
@@ -33,6 +34,10 @@ public class PostagemController {
 	@Autowired  // inversão de dependencia / controle 
 	// O Spring cria automaticamente um objeto do repositório // e injeta dentro desta variável.
 	private PostagemRepository postagemRepository;
+	
+	@Autowired
+	private TemaRepository temaRepository;
+	
 	
 	// cria a classe repo | implementa os metodos da interface | instancia um objeto da classe repository
 
@@ -54,17 +59,26 @@ public ResponseEntity<Postagem>	getById(@PathVariable Long id) {
 
 @PostMapping
 public ResponseEntity<Postagem> post(@Valid @RequestBody Postagem postagem) {
+	if (temaRepository.existsById(postagem.getTema().getId())) {
 		postagem.setId(null);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(postagemRepository.save(postagem));
+	}
+		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tema não existe!", null);
+		
 
 }
 @PutMapping
 public ResponseEntity<Postagem> put(@Valid @RequestBody Postagem postagem) {
-	return postagemRepository.findById(postagem.getId())
-			.map(resposta -> ResponseEntity.status(HttpStatus.OK)
-					.body(postagemRepository.save(postagem)))
-			.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+	if (postagemRepository.existsById(postagem.getId())) {
+		if (temaRepository.existsById(postagem.getTema().getId()))
+			return ResponseEntity.status(HttpStatus.OK)
+					.body(postagemRepository.save(postagem));
+		
+		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tema não existe!", null);
+		
+	}
+	return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
 }
 
@@ -76,6 +90,7 @@ public void delete (@PathVariable Long id) {
 		throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 	postagemRepository.deleteById(id);	
 }
+
 
 @GetMapping("/titulo/{titulo}")
 public ResponseEntity<List<Postagem>> getByTitulo(@PathVariable String titulo){
