@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,15 +25,16 @@ public class Usuario {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message = "O Atributo Nome é Obrigatório!")
+	@NotBlank(message = "O atributo nome é obrigatório!")
 	private String nome;
 
-	@NotBlank(message = "O Atributo Usuário é Obrigatório!")
-	@Email(message = "O Atributo Usuário deve ser um email válido!")
+	@Schema(example = "email@email.com.br")
+	@NotBlank(message = "O atributo usuário é obrigatório!")
+	@Email(message = "O atributo usuário deve ser um email válido!")
 	private String usuario;
 
-	@NotBlank(message = "O Atributo Senha é Obrigatório!")
-	@Size(min = 8, message = "A Senha deve ter no mínimo 8 caracteres")
+	@NotBlank(message = "O atributo senha é obrigatório!")
+	@Size(min = 8, message = "A senha deve ter no mínimo 8 caracteres")
 	private String senha;
 
 	@Size(max = 5000, message = "O link da foto não pode ser maior do que 5000 caracteres")
