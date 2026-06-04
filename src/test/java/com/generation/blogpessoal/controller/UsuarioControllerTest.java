@@ -106,7 +106,7 @@ class UsuarioControllerTest {
 
 		// Given
 		usuarioService.cadastrarUsuario(
-				TestBuilder.criarUsuario(null, "Ana Marques", "ana_marques@email.com.br", "12345678"));
+				TestBuilder.criarUsuario(null, "Bruna Mendes", "bruna_mendes@email.com.br", "12345678"));
 		usuarioService.cadastrarUsuario(
 				TestBuilder.criarUsuario(null, "Carlos Moura", "carlos_moura@email.com.br", "12345678"));
 
@@ -145,20 +145,18 @@ class UsuarioControllerTest {
 	@DisplayName("✔ 06 - Deve autenticar um usuário com sucesso")
 	void deveAutenticarUsuario() {
 
-		// Cadastra usuário válido para tentar logar
-		Usuario usuarioParaLogar = TestBuilder.criarUsuario(null, "Roberto Silva", "roberto_silva@email.com.br",
+		Usuario usuarioParaLogar = TestBuilder.criarUsuario(null, "Bruna Mendes", "bruna_mendes@email.com.br",
 				"12345678");
 		usuarioService.cadastrarUsuario(usuarioParaLogar);
 
 		// Cria o objeto de login com o mesmo e-mail e senha cadastrados
-		Usuario login = TestBuilder.criarUsuario(null, null, "roberto_silva@email.com.br", "12345678");
+		Usuario login = TestBuilder.criarUsuario(null, null, "bruna_mendes@email.com.br", "12345678");
 
 		// Faz o POST para o endpoint de login
 		HttpEntity<Usuario> requisicao = new HttpEntity<>(login);
 		ResponseEntity<Usuario> resposta = testRestTemplate.exchange(BASE_URL + "/logar", HttpMethod.POST, requisicao,
 				Usuario.class);
 
-		// Valida se o login teve sucesso (HTTP 200 OK) e se retornou um token
 		assertEquals(HttpStatus.OK, resposta.getStatusCode());
 		assertNotNull(resposta.getBody());
 
