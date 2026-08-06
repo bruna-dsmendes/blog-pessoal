@@ -60,6 +60,15 @@ public class PostagemController {
 		return ResponseEntity.ok(PageResponse.de(postagemService.buscar(termo, pageable)));
 	}
 
+	@GetMapping("/autor/{username}")
+	@Operation(summary = "Artigos publicados de um autor")
+	public ResponseEntity<PageResponse<PostagemResumoResponse>> porAutor(
+			@PathVariable String username,
+			@PageableDefault(size = 10, sort = "publicadoEm", direction = Sort.Direction.DESC) Pageable pageable) {
+
+		return ResponseEntity.ok(PageResponse.de(postagemService.porAutor(username, pageable)));
+	}
+
 	@GetMapping("/tag/{slugTag}")
 	@Operation(summary = "Postagens publicadas com uma tag")
 	public ResponseEntity<PageResponse<PostagemResumoResponse>> porTag(

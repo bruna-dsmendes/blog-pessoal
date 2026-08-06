@@ -1,6 +1,9 @@
 package com.generation.blogpessoal.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -9,32 +12,43 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.generation.blogpessoal.dto.tag.TagResponse;
 import com.generation.blogpessoal.dto.usuario.LoginRequest;
 import com.generation.blogpessoal.dto.usuario.LoginResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
+import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
 import com.generation.blogpessoal.exception.ConflitoException;
 import com.generation.blogpessoal.exception.CredenciaisInvalidasException;
 import com.generation.blogpessoal.exception.RecursoNaoEncontradoException;
+import com.generation.blogpessoal.model.StatusPostagem;
 import com.generation.blogpessoal.model.Usuario;
+import com.generation.blogpessoal.repository.PostagemRepository;
 import com.generation.blogpessoal.repository.UsuarioRepository;
 import com.generation.blogpessoal.security.JwtService;
 
 @Service
 public class UsuarioService {
 
+	private static final int LIMITE_DE_TAGS_NO_PERFIL = 5;
+
 	private final UsuarioRepository usuarioRepository;
+	private final PostagemRepository postagemRepository;
 	private final JwtService jwtService;
 	private final AuthenticationManager authenticationManager;
 	private final PasswordEncoder passwordEncoder;
+	private final SlugService slugService;
 
-	public UsuarioService(UsuarioRepository usuarioRepository, JwtService jwtService,
-			AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder) {
+	public UsuarioService(UsuarioRepository usuarioRepository, PostagemRepository postagemRepository,
+			JwtService jwtService, AuthenticationManager authenticationManager,
+			PasswordEncoder passwordEncoder, SlugService slugService) {
 		this.usuarioRepository = usuarioRepository;
+		this.postagemRepository = postagemRepository;
 		this.jwtService = jwtService;
 		this.authenticationManager = authenticationManager;
 		this.passwordEncoder = passwordEncoder;
+		this.slugService = slugService;
 	}
 
 	@Transactional(readOnly = true)
@@ -67,6 +81,12 @@ public class UsuarioService {
 		usuario.setSenha(passwordEncoder.encode(request.senha()));
 		usuario.setFoto(request.foto());
 
+		/*
+		 * O username sai do nome em vez de virar mais um campo no cadastro.
+		 * Quem quiser trocar, troca depois na edição do perfil.
+		 */
+		usuario.setUsername(slugService.gerarUnico(request.nome(), usuarioRepository::existsByUsername));
+
 		return UsuarioResponse.de(usuarioRepository.save(usuario));
 	}
 
@@ -85,9 +105,19 @@ public class UsuarioService {
 			throw new ConflitoException("Já existe uma conta cadastrada com esse e-mail");
 		}
 
+		boolean trocandoUsername = !usuario.getUsername().equals(request.username());
+
+		if (trocandoUsername && usuarioRepository.existsByUsername(request.username())) {
+			throw new ConflitoException("Esse nome de usuário já está em uso");
+		}
+
 		usuario.setNome(request.nome());
 		usuario.setUsuario(request.usuario());
+		usuario.setUsername(request.username());
 		usuario.setFoto(request.foto());
+		usuario.setBio(request.bio());
+		usuario.setLinkGithub(request.linkGithub());
+		usuario.setLinkLinkedin(request.linkLinkedin());
 
 		// Senha só é re-encodada quando a pessoa realmente enviou uma nova.
 		if (request.senha() != null && !request.senha().isBlank()) {
@@ -118,6 +148,31 @@ public class UsuarioService {
 				jwtService.generateToken(usuario.getUsuario()),
 				"Bearer",
 				jwtService.calcularExpiracao());
+	}
+
+	/**
+	 * Perfil de autor, aberto ao público.
+	 *
+	 * As estatísticas contam só o que está publicado: rascunho é privado, e o
+	 * número de rascunhos de alguém não é informação de quem visita.
+	 */
+	@Transactional(readOnly = true)
+	public PerfilPublicoResponse perfilPublico(String username) {
+
+		Usuario autor = usuarioRepository.findByUsername(username)
+				.orElseThrow(() -> new RecursoNaoEncontradoException("Perfil não encontrado: " + username));
+
+		long artigos = postagemRepository.countByUsuarioIdAndStatus(autor.getId(), StatusPostagem.PUBLICADO);
+		long minutos = postagemRepository.somarTempoLeitura(autor.getId(), StatusPostagem.PUBLICADO);
+
+		List<TagResponse> tags = postagemRepository
+				.buscarTagsMaisUsadas(autor.getId(), StatusPostagem.PUBLICADO,
+						PageRequest.of(0, LIMITE_DE_TAGS_NO_PERFIL))
+				.stream()
+				.map(TagResponse::de)
+				.toList();
+
+		return PerfilPublicoResponse.de(autor, artigos, minutos, tags);
 	}
 
 	@Transactional(readOnly = true)

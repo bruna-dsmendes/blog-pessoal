@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.generation.blogpessoal.dto.PageResponse;
 import com.generation.blogpessoal.dto.usuario.LoginRequest;
 import com.generation.blogpessoal.dto.usuario.LoginResponse;
+import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
@@ -54,6 +55,12 @@ public class UsuarioController {
 	@Operation(summary = "Retorna o perfil do usuário autenticado")
 	public ResponseEntity<UsuarioResponse> perfil(@AuthenticationPrincipal UserDetails usuarioLogado) {
 		return ResponseEntity.ok(usuarioService.buscarPorEmail(usuarioLogado.getUsername()));
+	}
+
+	@GetMapping("/perfil/{username}")
+	@Operation(summary = "Perfil público de um autor, com estatísticas e tags mais usadas")
+	public ResponseEntity<PerfilPublicoResponse> perfilPublico(@PathVariable String username) {
+		return ResponseEntity.ok(usuarioService.perfilPublico(username));
 	}
 
 	@GetMapping("/{id}")

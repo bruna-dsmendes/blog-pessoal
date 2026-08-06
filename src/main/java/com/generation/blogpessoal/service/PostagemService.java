@@ -50,6 +50,13 @@ public class PostagemService {
 				.map(PostagemResumoResponse::de);
 	}
 
+	/** Artigos publicados de um autor. Página pública, sem rascunhos. */
+	@Transactional(readOnly = true)
+	public Page<PostagemResumoResponse> porAutor(String username, Pageable pageable) {
+		return postagemRepository.buscarDoAutorPorUsername(username, StatusPostagem.PUBLICADO, pageable)
+				.map(PostagemResumoResponse::de);
+	}
+
 	@Transactional(readOnly = true)
 	public Page<PostagemResumoResponse> buscar(String termo, Pageable pageable) {
 		return postagemRepository.buscarPorTermo(termo, StatusPostagem.PUBLICADO, pageable)

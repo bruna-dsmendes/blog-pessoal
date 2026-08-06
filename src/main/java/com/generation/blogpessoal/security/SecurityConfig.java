@@ -63,6 +63,9 @@ public class SecurityConfig {
 						 */
 						.requestMatchers(HttpMethod.GET, "/postagens/minhas").authenticated()
 
+						// Perfil de autor é página aberta, como no Medium.
+						.requestMatchers(HttpMethod.GET, "/usuarios/perfil/*").permitAll()
+
 						/*
 						 * Leitura é pública: blog serve para ser lido sem login.
 						 * O service ainda esconde rascunho de quem não é o autor.
