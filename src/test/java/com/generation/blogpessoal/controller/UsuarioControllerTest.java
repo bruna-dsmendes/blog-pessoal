@@ -2,6 +2,7 @@ package com.generation.blogpessoal.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -168,6 +170,58 @@ class UsuarioControllerTest {
 				new HttpEntity<>(TestBuilder.criarLogin(ADMIN, "senha-errada")), String.class);
 
 		assertEquals(HttpStatus.UNAUTHORIZED, resposta.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("09 - Login deve devolver cookie httpOnly")
+	void loginDeveDevolverCookieHttpOnly() {
+
+		String setCookie = JwtHelper.obterCookie(testRestTemplate, ADMIN, SENHA);
+
+		assertTrue(setCookie.startsWith("blog_token="), "O cookie deve se chamar blog_token");
+		assertTrue(setCookie.contains("HttpOnly"), "O cookie precisa ser HttpOnly");
+		assertTrue(setCookie.contains("SameSite=Lax"), "O cookie precisa declarar SameSite");
+		assertTrue(setCookie.contains("Path=/"), "O cookie precisa valer para toda a API");
+	}
+
+	@Test
+	@DisplayName("10 - Deve autenticar só com o cookie, sem header Authorization")
+	void deveAutenticarSomenteComCookie() {
+
+		String setCookie = JwtHelper.obterCookie(testRestTemplate, ADMIN, SENHA);
+
+		ResponseEntity<UsuarioResponse> resposta = testRestTemplate.exchange(
+				BASE_URL + "/me", HttpMethod.GET, JwtHelper.comCookie(setCookie), UsuarioResponse.class);
+
+		assertEquals(HttpStatus.OK, resposta.getStatusCode());
+		assertNotNull(resposta.getBody());
+		assertEquals(ADMIN, resposta.getBody().usuario());
+	}
+
+	@Test
+	@DisplayName("11 - Cookie inválido não deve autenticar")
+	void cookieInvalidoNaoAutentica() {
+
+		ResponseEntity<String> resposta = testRestTemplate.exchange(
+				BASE_URL + "/me", HttpMethod.GET,
+				JwtHelper.comCookie("blog_token=nao-e-um-jwt"), String.class);
+
+		assertEquals(HttpStatus.UNAUTHORIZED, resposta.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("12 - Logout deve devolver cookie com validade zero")
+	void logoutDeveApagarOCookie() {
+
+		ResponseEntity<Void> resposta = testRestTemplate.exchange(
+				BASE_URL + "/deslogar", HttpMethod.POST, HttpEntity.EMPTY, Void.class);
+
+		assertEquals(HttpStatus.NO_CONTENT, resposta.getStatusCode());
+
+		String setCookie = resposta.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+
+		assertNotNull(setCookie);
+		assertTrue(setCookie.contains("Max-Age=0"), "O logout precisa expirar o cookie");
 	}
 
 }

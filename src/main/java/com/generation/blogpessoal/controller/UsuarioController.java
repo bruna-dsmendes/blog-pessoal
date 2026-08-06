@@ -2,6 +2,7 @@ package com.generation.blogpessoal.controller;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +22,7 @@ import com.generation.blogpessoal.dto.usuario.LoginResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
+import com.generation.blogpessoal.security.AuthCookieService;
 import com.generation.blogpessoal.service.UsuarioService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,9 +35,11 @@ import jakarta.validation.Valid;
 public class UsuarioController {
 
 	private final UsuarioService usuarioService;
+	private final AuthCookieService authCookieService;
 
-	public UsuarioController(UsuarioService usuarioService) {
+	public UsuarioController(UsuarioService usuarioService, AuthCookieService authCookieService) {
 		this.usuarioService = usuarioService;
+		this.authCookieService = authCookieService;
 	}
 
 	@GetMapping("/all")
@@ -73,8 +77,28 @@ public class UsuarioController {
 	}
 
 	@PostMapping("/logar")
+	@Operation(summary = "Autentica e devolve a sessão em um cookie httpOnly")
 	public ResponseEntity<LoginResponse> autenticar(@Valid @RequestBody LoginRequest request) {
-		return ResponseEntity.ok(usuarioService.autenticar(request));
+
+		LoginResponse resposta = usuarioService.autenticar(request);
+
+		return ResponseEntity.ok()
+				.header(HttpHeaders.SET_COOKIE, authCookieService.criar(resposta.token()).toString())
+				.body(resposta);
+	}
+
+	/*
+	 * Precisa existir no servidor. Como o front não enxerga o cookie httpOnly,
+	 * ele não consegue apagar a sessão sozinho: só quem escreveu o cookie pode
+	 * sobrescrevê-lo com validade zero.
+	 */
+	@PostMapping("/deslogar")
+	@Operation(summary = "Encerra a sessão apagando o cookie")
+	public ResponseEntity<Void> deslogar() {
+
+		return ResponseEntity.noContent()
+				.header(HttpHeaders.SET_COOKIE, authCookieService.limpar().toString())
+				.build();
 	}
 
 }

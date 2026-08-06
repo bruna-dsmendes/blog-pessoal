@@ -1,22 +1,35 @@
 package com.generation.blogpessoal.security;
 
-import io.jsonwebtoken.JwtException;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * Lê o token e popula o SecurityContext.
+ *
+ * O cookie tem prioridade: é por onde o navegador autentica. O header
+ * Authorization continua aceito para o Swagger, testes e clientes de API,
+ * que não são navegadores e não têm por que carregar cookie.
+ *
+ * Se o token for inválido, o filtro apenas não autentica e deixa a requisição
+ * seguir. Quem decide o que fazer é o SecurityFilterChain, que responde 401 nos
+ * endpoints protegidos e libera os públicos.
+ */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
@@ -24,10 +37,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 	private final JwtService jwtService;
 	private final UserDetailsServiceImpl userDetailsService;
+	private final AuthCookieService authCookieService;
 
-	public JwtAuthFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService) {
+	public JwtAuthFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService,
+			AuthCookieService authCookieService) {
 		this.jwtService = jwtService;
 		this.userDetailsService = userDetailsService;
+		this.authCookieService = authCookieService;
 	}
 
 	@Override
@@ -46,13 +62,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 	private String extrairToken(HttpServletRequest request) {
 
-		String authHeader = request.getHeader("Authorization");
+		return authCookieService.extrair(request).orElseGet(() -> {
 
-		if (authHeader != null && authHeader.startsWith("Bearer ") && authHeader.length() > 7) {
-			return authHeader.substring(7);
-		}
+			String authHeader = request.getHeader("Authorization");
 
-		return null;
+			if (authHeader != null && authHeader.startsWith("Bearer ") && authHeader.length() > 7) {
+				return authHeader.substring(7);
+			}
+
+			return null;
+		});
 	}
 
 	private void autenticar(HttpServletRequest request, String token) {
@@ -78,7 +97,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 		} catch (JwtException | IllegalArgumentException e) {
 			log.debug("Token JWT rejeitado: {}", e.getMessage());
-		} catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+		} catch (UsernameNotFoundException e) {
 			log.debug("Token válido, mas o usuário não existe mais: {}", e.getMessage());
 		}
 	}
