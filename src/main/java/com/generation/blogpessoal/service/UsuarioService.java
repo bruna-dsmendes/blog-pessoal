@@ -69,7 +69,11 @@ public class UsuarioService {
 
 		return UsuarioResponse.de(usuarioRepository.save(usuario));
 	}
-	
+
+	/**
+	 * Atualiza sempre o usuário do token, nunca um id vindo do corpo.
+	 * É o que impede alguém autenticado de editar o perfil de outra pessoa.
+	 */
 	@Transactional
 	public UsuarioResponse atualizar(String emailLogado, UsuarioAtualizarRequest request) {
 
