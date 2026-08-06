@@ -1,5 +1,6 @@
 package com.generation.blogpessoal.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.generation.blogpessoal.model.Postagem;
 import com.generation.blogpessoal.model.StatusPostagem;
+import com.generation.blogpessoal.model.Tag;
 
 public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 
@@ -97,6 +99,37 @@ public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 			WHERE p.slug = :slug
 			""")
 	Optional<Postagem> buscarPorSlugCompleta(@Param("slug") String slug);
+
+	@Query(value = """
+			SELECT p FROM Postagem p
+			JOIN FETCH p.usuario u
+			WHERE u.username = :username AND p.status = :status
+			""",
+			countQuery = """
+			SELECT COUNT(p) FROM Postagem p
+			WHERE p.usuario.username = :username AND p.status = :status
+			""")
+	Page<Postagem> buscarDoAutorPorUsername(@Param("username") String username,
+			@Param("status") StatusPostagem status, Pageable pageable);
+
+	long countByUsuarioIdAndStatus(Long usuarioId, StatusPostagem status);
+
+	@Query("""
+			SELECT COALESCE(SUM(p.tempoLeitura), 0) FROM Postagem p
+			WHERE p.usuario.id = :usuarioId AND p.status = :status
+			""")
+	long somarTempoLeitura(@Param("usuarioId") Long usuarioId,
+			@Param("status") StatusPostagem status);
+
+	/** Tags do autor, da mais usada para a menos usada. */
+	@Query("""
+			SELECT t FROM Postagem p JOIN p.tags t
+			WHERE p.usuario.id = :usuarioId AND p.status = :status
+			GROUP BY t
+			ORDER BY COUNT(t) DESC
+			""")
+	List<Tag> buscarTagsMaisUsadas(@Param("usuarioId") Long usuarioId,
+			@Param("status") StatusPostagem status, Pageable pageable);
 
 	boolean existsBySlug(String slug);
 
