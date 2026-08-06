@@ -17,7 +17,16 @@ public class TestBuilder {
 	}
 
 	public static UsuarioAtualizarRequest atualizarUsuario(String nome, String email, String senha) {
-		return new UsuarioAtualizarRequest(nome, email, senha, "-");
+		return atualizarUsuario(nome, email, senha, gerarUsername(nome));
+	}
+
+	public static UsuarioAtualizarRequest atualizarUsuario(String nome, String email, String senha,
+			String username) {
+		return new UsuarioAtualizarRequest(nome, username, email, senha, "-", null, null, null);
+	}
+
+	private static String gerarUsername(String nome) {
+		return nome.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
 	}
 
 	public static LoginRequest criarLogin(String email, String senha) {
