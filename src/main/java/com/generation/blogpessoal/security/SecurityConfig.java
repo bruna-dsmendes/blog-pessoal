@@ -55,7 +55,18 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
 						.requestMatchers(HttpMethod.OPTIONS).permitAll()
-						.requestMatchers(HttpMethod.GET, "/postagens/**", "/temas/**").permitAll()
+
+						/*
+						 * Precisa vir antes do permitAll abaixo: a ordem das regras
+						 * importa, e /postagens/minhas cai no padrao /postagens/**.
+						 */
+						.requestMatchers(HttpMethod.GET, "/postagens/minhas").authenticated()
+
+						/*
+						 * Leitura é pública: blog serve para ser lido sem login.
+						 * O service ainda esconde rascunho de quem não é o autor.
+						 */
+						.requestMatchers(HttpMethod.GET, "/postagens/**", "/temas/**", "/tags/**").permitAll()
 
 						.anyRequest().authenticated())
 

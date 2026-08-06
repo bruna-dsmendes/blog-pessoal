@@ -9,17 +9,21 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.generation.blogpessoal.dto.PageResponse;
 import com.generation.blogpessoal.dto.postagem.PostagemRequest;
 import com.generation.blogpessoal.dto.postagem.PostagemResponse;
+import com.generation.blogpessoal.dto.postagem.PostagemResumoResponse;
+import com.generation.blogpessoal.model.StatusPostagem;
 import com.generation.blogpessoal.service.PostagemService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,32 +41,67 @@ public class PostagemController {
 		this.postagemService = postagemService;
 	}
 
-	@GetMapping
-	@Operation(summary = "Lista postagens paginadas, da mais recente para a mais antiga")
-	public ResponseEntity<PageResponse<PostagemResponse>> listar(
-			@PageableDefault(size = 10, sort = "data", direction = Sort.Direction.DESC) Pageable pageable) {
+	// ---------------------------------------------------------------- leitura
 
-		return ResponseEntity.ok(PageResponse.de(postagemService.listar(pageable)));
+	@GetMapping
+	@Operation(summary = "Feed público, só com postagens publicadas")
+	public ResponseEntity<PageResponse<PostagemResumoResponse>> feed(
+			@PageableDefault(size = 10, sort = "publicadoEm", direction = Sort.Direction.DESC) Pageable pageable) {
+
+		return ResponseEntity.ok(PageResponse.de(postagemService.feed(pageable)));
+	}
+
+	@GetMapping("/buscar")
+	@Operation(summary = "Busca no título e no subtítulo das postagens publicadas")
+	public ResponseEntity<PageResponse<PostagemResumoResponse>> buscar(
+			@RequestParam String termo,
+			@PageableDefault(size = 10, sort = "publicadoEm", direction = Sort.Direction.DESC) Pageable pageable) {
+
+		return ResponseEntity.ok(PageResponse.de(postagemService.buscar(termo, pageable)));
+	}
+
+	@GetMapping("/tag/{slugTag}")
+	@Operation(summary = "Postagens publicadas com uma tag")
+	public ResponseEntity<PageResponse<PostagemResumoResponse>> porTag(
+			@PathVariable String slugTag,
+			@PageableDefault(size = 10, sort = "publicadoEm", direction = Sort.Direction.DESC) Pageable pageable) {
+
+		return ResponseEntity.ok(PageResponse.de(postagemService.porTag(slugTag, pageable)));
+	}
+
+	@GetMapping("/minhas")
+	@Operation(summary = "Postagens do usuário autenticado, incluindo rascunhos")
+	public ResponseEntity<PageResponse<PostagemResumoResponse>> minhas(
+			@RequestParam(required = false) StatusPostagem status,
+			@PageableDefault(size = 10, sort = "atualizadoEm", direction = Sort.Direction.DESC) Pageable pageable,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(PageResponse.de(
+				postagemService.minhas(usuarioLogado.getUsername(), status, pageable)));
+	}
+
+	@GetMapping("/slug/{slug}")
+	@Operation(summary = "Busca uma postagem pelo slug. É por aqui que o front monta a URL do artigo")
+	public ResponseEntity<PostagemResponse> porSlug(
+			@PathVariable String slug,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(postagemService.porSlug(slug, emailDe(usuarioLogado)));
 	}
 
 	@GetMapping("/{id}")
-	@Operation(summary = "Busca uma postagem pelo id")
-	public ResponseEntity<PostagemResponse> buscarPorId(@PathVariable Long id) {
-		return ResponseEntity.ok(postagemService.buscarPorId(id));
+	public ResponseEntity<PostagemResponse> porId(
+			@PathVariable Long id,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(postagemService.porId(id, emailDe(usuarioLogado)));
 	}
 
-	@GetMapping("/titulo/{titulo}")
-	@Operation(summary = "Busca postagens pelo título")
-	public ResponseEntity<PageResponse<PostagemResponse>> buscarPorTitulo(
-			@PathVariable String titulo,
-			@PageableDefault(size = 10, sort = "data", direction = Sort.Direction.DESC) Pageable pageable) {
-
-		return ResponseEntity.ok(PageResponse.de(postagemService.buscarPorTitulo(titulo, pageable)));
-	}
+	// ---------------------------------------------------------------- escrita
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	@Operation(summary = "Cria uma postagem. O autor vem do token, não do corpo da requisição")
+	@Operation(summary = "Cria uma postagem como rascunho")
 	public PostagemResponse criar(
 			@Valid @RequestBody PostagemRequest request,
 			@AuthenticationPrincipal UserDetails usuarioLogado) {
@@ -71,7 +110,7 @@ public class PostagemController {
 	}
 
 	@PutMapping("/{id}")
-	@Operation(summary = "Atualiza uma postagem. Só o autor consegue")
+	@Operation(summary = "Atualiza o conteúdo. Não altera o status")
 	public ResponseEntity<PostagemResponse> atualizar(
 			@PathVariable Long id,
 			@Valid @RequestBody PostagemRequest request,
@@ -82,12 +121,39 @@ public class PostagemController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@Operation(summary = "Exclui uma postagem. Só o autor consegue")
-	public void excluir(
-			@PathVariable Long id,
-			@AuthenticationPrincipal UserDetails usuarioLogado) {
-
+	public void excluir(@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
 		postagemService.excluir(id, usuarioLogado.getUsername());
+	}
+
+	// ----------------------------------------------------------- ciclo de vida
+
+	@PatchMapping("/{id}/publicar")
+	@Operation(summary = "Publica a postagem. A data de publicação é gravada só na primeira vez")
+	public ResponseEntity<PostagemResponse> publicar(
+			@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(postagemService.publicar(id, usuarioLogado.getUsername()));
+	}
+
+	@PatchMapping("/{id}/arquivar")
+	@Operation(summary = "Tira a postagem do feed, mantendo o link acessível")
+	public ResponseEntity<PostagemResponse> arquivar(
+			@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(postagemService.arquivar(id, usuarioLogado.getUsername()));
+	}
+
+	@PatchMapping("/{id}/rascunho")
+	@Operation(summary = "Volta a postagem para rascunho")
+	public ResponseEntity<PostagemResponse> voltarParaRascunho(
+			@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(postagemService.voltarParaRascunho(id, usuarioLogado.getUsername()));
+	}
+
+	/** Endpoints públicos recebem null quando ninguém está autenticado. */
+	private String emailDe(UserDetails usuarioLogado) {
+		return usuarioLogado == null ? null : usuarioLogado.getUsername();
 	}
 
 }
