@@ -72,6 +72,7 @@ openssl rand -base64 48
 ## Roadmap
 
 - [x] **Fase 1** — DTOs, autorização por autor, paginação, Flyway, tratamento de erros
-- [ ] **Fase 2** — Artigos em markdown, slug, rascunho e publicação, tags N:N
-- [ ] **Fase 3** — Upload de imagens e embed de vídeo
+- [x] **Fase 2** — Artigos em markdown, slug, rascunho e publicação, tags N:N
+- [ ] **Fase 3** — Upload de imagens, embed de vídeo e sanitização do markdown
 - [ ] **Fase 4** — Comentários e reações
+- [ ] **Contração** — V5 remove `texto`, `tema_id` e `tb_temas` depois que o front migrar
