@@ -6,35 +6,39 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
-import com.generation.blogpessoal.model.UsuarioLogin;
+import com.generation.blogpessoal.dto.usuario.LoginRequest;
+import com.generation.blogpessoal.dto.usuario.LoginResponse;
 
 public class JwtHelper {
-    
-    private JwtHelper() {}
-    
-    public static String obterToken(TestRestTemplate testRestTemplate, String email, String senha) {
-        UsuarioLogin login = TestBuilder.criarUsuarioLogin(email, senha);
-        HttpEntity<UsuarioLogin> request = new HttpEntity<>(login);
-        
-        ResponseEntity<UsuarioLogin> response = testRestTemplate
-            .exchange("/usuarios/logar", HttpMethod.POST, request, UsuarioLogin.class);
-        
-        UsuarioLogin body = response.getBody();
-        if (body != null && body.getToken() != null) {
-            return body.getToken();
-        }
-        
-        throw new RuntimeException("Falha no login: " + email);
-    }
-    
-    public static <T> HttpEntity<T> criarRequisicaoComToken(T body, String token) {
-        HttpHeaders headers = new HttpHeaders();
-        String tokenLimpo = token.startsWith("Bearer ") ? token.substring(7) : token;
-        headers.setBearerAuth(tokenLimpo);
-        return new HttpEntity<>(body, headers);
-    }
-    
-    public static HttpEntity<Void> criarRequisicaoComToken(String token) {
-        return criarRequisicaoComToken(null, token);
-    }
+
+	private JwtHelper() {
+	}
+
+	public static String obterToken(TestRestTemplate testRestTemplate, String email, String senha) {
+
+		LoginRequest login = TestBuilder.criarLogin(email, senha);
+		HttpEntity<LoginRequest> requisicao = new HttpEntity<>(login);
+
+		ResponseEntity<LoginResponse> resposta = testRestTemplate
+				.exchange("/usuarios/logar", HttpMethod.POST, requisicao, LoginResponse.class);
+
+		LoginResponse corpo = resposta.getBody();
+
+		if (corpo != null && corpo.token() != null) {
+			return corpo.token();
+		}
+
+		throw new IllegalStateException("Falha no login de teste: " + email);
+	}
+
+	public static <T> HttpEntity<T> comToken(T corpo, String token) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setBearerAuth(token);
+		return new HttpEntity<>(corpo, headers);
+	}
+
+	public static HttpEntity<Void> comToken(String token) {
+		return comToken(null, token);
+	}
+
 }
