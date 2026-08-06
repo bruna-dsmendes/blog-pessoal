@@ -1,12 +1,12 @@
 package com.generation.blogpessoal.controller;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,86 +16,78 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
-import com.generation.blogpessoal.model.Postagem;
-import com.generation.blogpessoal.repository.PostagemRepository;
-import com.generation.blogpessoal.repository.TemaRepository;
+import com.generation.blogpessoal.dto.PageResponse;
+import com.generation.blogpessoal.dto.postagem.PostagemRequest;
+import com.generation.blogpessoal.dto.postagem.PostagemResponse;
+import com.generation.blogpessoal.service.PostagemService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
-//	anotações: alterar e/ou definir comportamentos
-
-@RestController  // indica que a classe é uma controller (Recebe requisições)
-@RequestMapping("/postagens")  // indica que as requisições do endpoint "/postagens" serão tratadas por essa controller
-@CrossOrigin(origins = "*", allowedHeaders = "*") // libera o acesso a qualquer front end
-
+@RestController
+@RequestMapping("/postagens")
+@Tag(name = "Postagens")
 public class PostagemController {
-	@Autowired  // inversão de dependencia / controle 
-	// O Spring cria automaticamente um objeto do repositório // e injeta dentro desta variável.
-	private PostagemRepository postagemRepository;
-	
-	@Autowired
-	private TemaRepository temaRepository;
-	
-	
-	// cria a classe repo | implementa os metodos da interface | instancia um objeto da classe repository
 
-@GetMapping  // todas as requisições do tipo get vao ser executadas por esse metodo
+	private final PostagemService postagemService;
 
-public ResponseEntity<List<Postagem>> getAll(){ //Retorna todos os Objetos da Classe Postagem persistidos no Banco de dados.
-	
-	//  [ {postagem1}, {postagem2} ]
-	return ResponseEntity.ok(postagemRepository.findAll());
-}
-
-@GetMapping("/{id}")
-public ResponseEntity<Postagem>	getById(@PathVariable Long id) {
-	return postagemRepository.findById(id) // Retorna um Objeto específico da Classe Postagem persistidos no Banco de dados. A Postagem é identificada pelo Atributo id.
-			.map(resposta -> ResponseEntity.ok(resposta))
-			.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-	
+	public PostagemController(PostagemService postagemService) {
+		this.postagemService = postagemService;
 	}
 
-@PostMapping
-public ResponseEntity<Postagem> post(@Valid @RequestBody Postagem postagem) {
-	if (temaRepository.existsById(postagem.getTema().getId())) {
-		postagem.setId(null);
-		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(postagemRepository.save(postagem));
+	@GetMapping
+	@Operation(summary = "Lista postagens paginadas, da mais recente para a mais antiga")
+	public ResponseEntity<PageResponse<PostagemResponse>> listar(
+			@PageableDefault(size = 10, sort = "data", direction = Sort.Direction.DESC) Pageable pageable) {
+
+		return ResponseEntity.ok(PageResponse.de(postagemService.listar(pageable)));
 	}
-		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tema não existe!", null);
-		
 
-}
-@PutMapping
-public ResponseEntity<Postagem> put(@Valid @RequestBody Postagem postagem) {
-	if (postagemRepository.existsById(postagem.getId())) {
-		if (temaRepository.existsById(postagem.getTema().getId()))
-			return ResponseEntity.status(HttpStatus.OK)
-					.body(postagemRepository.save(postagem));
-		
-		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tema não existe!", null);
-		
+	@GetMapping("/{id}")
+	@Operation(summary = "Busca uma postagem pelo id")
+	public ResponseEntity<PostagemResponse> buscarPorId(@PathVariable Long id) {
+		return ResponseEntity.ok(postagemService.buscarPorId(id));
 	}
-	return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
-}
+	@GetMapping("/titulo/{titulo}")
+	@Operation(summary = "Busca postagens pelo título")
+	public ResponseEntity<PageResponse<PostagemResponse>> buscarPorTitulo(
+			@PathVariable String titulo,
+			@PageableDefault(size = 10, sort = "data", direction = Sort.Direction.DESC) Pageable pageable) {
 
-@ResponseStatus(HttpStatus.NO_CONTENT)
-@DeleteMapping("/{id}")
-public void delete (@PathVariable Long id) {
-	Optional<Postagem> postagem = postagemRepository.findById(id);
-	if(postagem.isEmpty())
-		throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-	postagemRepository.deleteById(id);	
-}
+		return ResponseEntity.ok(PageResponse.de(postagemService.buscarPorTitulo(titulo, pageable)));
+	}
 
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	@Operation(summary = "Cria uma postagem. O autor vem do token, não do corpo da requisição")
+	public PostagemResponse criar(
+			@Valid @RequestBody PostagemRequest request,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
 
-@GetMapping("/titulo/{titulo}")
-public ResponseEntity<List<Postagem>> getByTitulo(@PathVariable String titulo){
-	return ResponseEntity.ok(postagemRepository.findAllByTituloContainingIgnoreCase(titulo));
-}
+		return postagemService.criar(request, usuarioLogado.getUsername());
+	}
 
+	@PutMapping("/{id}")
+	@Operation(summary = "Atualiza uma postagem. Só o autor consegue")
+	public ResponseEntity<PostagemResponse> atualizar(
+			@PathVariable Long id,
+			@Valid @RequestBody PostagemRequest request,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(postagemService.atualizar(id, request, usuarioLogado.getUsername()));
+	}
+
+	@DeleteMapping("/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@Operation(summary = "Exclui uma postagem. Só o autor consegue")
+	public void excluir(
+			@PathVariable Long id,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		postagemService.excluir(id, usuarioLogado.getUsername());
+	}
 
 }
