@@ -4,6 +4,12 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 
+/**
+ * Envelope de paginacao proprio da API.
+ *
+ * Serializar o Page do Spring diretamente funciona, mas expoe a estrutura
+ * interna do framework no contrato e gera warning a partir do Spring Boot 3.3.
+ */
 public record PageResponse<T>(
 		List<T> conteudo,
 		int pagina,
