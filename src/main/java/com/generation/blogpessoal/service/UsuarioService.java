@@ -1,27 +1,7 @@
 package com.generation.blogpessoal.service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.generation.blogpessoal.dto.tag.TagResponse;
-import com.generation.blogpessoal.dto.usuario.LinkRequest;
-import com.generation.blogpessoal.dto.usuario.LoginRequest;
-import com.generation.blogpessoal.dto.usuario.LoginResponse;
-import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
-import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
-import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
-import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
+import com.generation.blogpessoal.dto.usuario.*;
 import com.generation.blogpessoal.exception.ConflitoException;
 import com.generation.blogpessoal.exception.CredenciaisInvalidasException;
 import com.generation.blogpessoal.exception.RecursoNaoEncontradoException;
@@ -32,6 +12,19 @@ import com.generation.blogpessoal.model.Usuario;
 import com.generation.blogpessoal.repository.PostagemRepository;
 import com.generation.blogpessoal.repository.UsuarioRepository;
 import com.generation.blogpessoal.security.JwtService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class UsuarioService {
@@ -187,6 +180,8 @@ public class UsuarioService {
 	private void aplicarLinks(Usuario usuario, List<LinkRequest> novos) {
 
 		usuario.getLinks().clear();
+
+		usuarioRepository.flush();
 
 		if (novos == null) {
 			return;
