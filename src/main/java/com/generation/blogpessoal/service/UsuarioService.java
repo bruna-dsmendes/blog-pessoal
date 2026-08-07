@@ -1,6 +1,8 @@
 package com.generation.blogpessoal.service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.generation.blogpessoal.dto.tag.TagResponse;
+import com.generation.blogpessoal.dto.usuario.LinkRequest;
 import com.generation.blogpessoal.dto.usuario.LoginRequest;
 import com.generation.blogpessoal.dto.usuario.LoginResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
@@ -22,7 +25,9 @@ import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
 import com.generation.blogpessoal.exception.ConflitoException;
 import com.generation.blogpessoal.exception.CredenciaisInvalidasException;
 import com.generation.blogpessoal.exception.RecursoNaoEncontradoException;
+import com.generation.blogpessoal.model.LinkPerfil;
 import com.generation.blogpessoal.model.StatusPostagem;
+import com.generation.blogpessoal.model.TipoLink;
 import com.generation.blogpessoal.model.Usuario;
 import com.generation.blogpessoal.repository.PostagemRepository;
 import com.generation.blogpessoal.repository.UsuarioRepository;
@@ -116,8 +121,8 @@ public class UsuarioService {
 		usuario.setUsername(request.username());
 		usuario.setFoto(request.foto());
 		usuario.setBio(request.bio());
-		usuario.setLinkGithub(request.linkGithub());
-		usuario.setLinkLinkedin(request.linkLinkedin());
+
+		aplicarLinks(usuario, request.links());
 
 		// Senha só é re-encodada quando a pessoa realmente enviou uma nova.
 		if (request.senha() != null && !request.senha().isBlank()) {
@@ -173,6 +178,28 @@ public class UsuarioService {
 				.toList();
 
 		return PerfilPublicoResponse.de(autor, artigos, minutos, tags);
+	}
+
+	/*
+	 * Substitui a lista inteira em vez de comparar item a item. Com
+	 * orphanRemoval, o que sai da coleção é apagado no flush.
+	 */
+	private void aplicarLinks(Usuario usuario, List<LinkRequest> novos) {
+
+		usuario.getLinks().clear();
+
+		if (novos == null) {
+			return;
+		}
+
+		Set<TipoLink> jaAdicionados = new HashSet<>();
+		int ordem = 0;
+
+		for (LinkRequest link : novos) {
+			if (link.url() != null && !link.url().isBlank() && jaAdicionados.add(link.tipo())) {
+				usuario.getLinks().add(new LinkPerfil(usuario, link.tipo(), link.url().trim(), ordem++));
+			}
+		}
 	}
 
 	@Transactional(readOnly = true)

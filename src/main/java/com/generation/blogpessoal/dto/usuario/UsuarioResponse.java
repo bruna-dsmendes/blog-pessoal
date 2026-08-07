@@ -1,5 +1,7 @@
 package com.generation.blogpessoal.dto.usuario;
 
+import java.util.List;
+
 import com.generation.blogpessoal.model.Usuario;
 
 /** Sem campo senha: a entidade nunca é serializada, então o hash não vaza. */
@@ -10,8 +12,7 @@ public record UsuarioResponse(
 		String usuario,
 		String foto,
 		String bio,
-		String linkGithub,
-		String linkLinkedin) {
+		List<LinkResponse> links) {
 
 	public static UsuarioResponse de(Usuario usuario) {
 		return new UsuarioResponse(
@@ -21,8 +22,7 @@ public record UsuarioResponse(
 				usuario.getUsuario(),
 				usuario.getFoto(),
 				usuario.getBio(),
-				usuario.getLinkGithub(),
-				usuario.getLinkLinkedin());
+				usuario.getLinks().stream().map(LinkResponse::de).toList());
 	}
 
 }

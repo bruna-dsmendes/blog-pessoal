@@ -22,7 +22,7 @@ public class TestBuilder {
 
 	public static UsuarioAtualizarRequest atualizarUsuario(String nome, String email, String senha,
 			String username) {
-		return new UsuarioAtualizarRequest(nome, username, email, senha, "-", null, null, null);
+		return new UsuarioAtualizarRequest(nome, username, email, senha, "-", null, List.of());
 	}
 
 	private static String gerarUsername(String nome) {

@@ -11,8 +11,7 @@ public record PerfilPublicoResponse(
 		String nome,
 		String foto,
 		String bio,
-		String linkGithub,
-		String linkLinkedin,
+		List<LinkResponse> links,
 		long artigosPublicados,
 		long minutosEscritos,
 		List<TagResponse> tagsMaisUsadas) {
@@ -25,8 +24,7 @@ public record PerfilPublicoResponse(
 				usuario.getNome(),
 				usuario.getFoto(),
 				usuario.getBio(),
-				usuario.getLinkGithub(),
-				usuario.getLinkLinkedin(),
+				usuario.getLinks().stream().map(LinkResponse::de).toList(),
 				artigos,
 				minutos,
 				tags);

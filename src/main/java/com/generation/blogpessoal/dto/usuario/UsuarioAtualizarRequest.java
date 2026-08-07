@@ -1,6 +1,9 @@
 package com.generation.blogpessoal.dto.usuario;
 
+import java.util.List;
+
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -35,9 +38,6 @@ public record UsuarioAtualizarRequest(
 		@Size(max = 280, message = "A bio não pode passar de 280 caracteres")
 		String bio,
 
-		@Size(max = 200, message = "O link não pode passar de 200 caracteres")
-		String linkGithub,
-
-		@Size(max = 200, message = "O link não pode passar de 200 caracteres")
-		String linkLinkedin) {
+		@Size(max = 10, message = "Use no máximo 10 links")
+		List<@Valid LinkRequest> links) {
 }
