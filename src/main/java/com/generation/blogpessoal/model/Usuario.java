@@ -1,10 +1,18 @@
 package com.generation.blogpessoal.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.BatchSize;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 @Entity
@@ -34,11 +42,10 @@ public class Usuario {
 	@Column(length = 280)
 	private String bio;
 
-	@Column(name = "link_github", length = 200)
-	private String linkGithub;
-
-	@Column(name = "link_linkedin", length = 200)
-	private String linkLinkedin;
+	@OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("ordem ASC")
+	@BatchSize(size = 25)
+	private List<LinkPerfil> links = new ArrayList<>();
 
 	public Long getId() {
 		return id;
@@ -96,20 +103,8 @@ public class Usuario {
 		this.bio = bio;
 	}
 
-	public String getLinkGithub() {
-		return linkGithub;
-	}
-
-	public void setLinkGithub(String linkGithub) {
-		this.linkGithub = linkGithub;
-	}
-
-	public String getLinkLinkedin() {
-		return linkLinkedin;
-	}
-
-	public void setLinkLinkedin(String linkLinkedin) {
-		this.linkLinkedin = linkLinkedin;
+	public List<LinkPerfil> getLinks() {
+		return links;
 	}
 
 }
