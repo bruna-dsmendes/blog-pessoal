@@ -1,16 +1,17 @@
 package com.generation.blogpessoal.repository;
 
-import com.generation.blogpessoal.model.Postagem;
-import com.generation.blogpessoal.model.StatusPostagem;
-import com.generation.blogpessoal.model.Tag;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+import com.generation.blogpessoal.model.Postagem;
+import com.generation.blogpessoal.model.StatusPostagem;
+import com.generation.blogpessoal.model.Tag;
 
 public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 
@@ -56,6 +57,13 @@ public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 	Page<Postagem> buscarPorTermo(@Param("termo") String termo,
 			@Param("status") StatusPostagem status, Pageable pageable);
 
+	/*
+	 * Duas consultas em vez de uma com ":status IS NULL". Comparar parametro com
+	 * NULL em JPQL deixa o Postgres sem conseguir inferir o tipo do parametro, e
+	 * o erro que aparece nao tem nada a ver com a causa.
+	 *
+	 * Ambas incluem rascunhos: so sao chamadas com o e-mail do proprio autor.
+	 */
 	@Query(value = """
 			SELECT p FROM Postagem p
 			JOIN FETCH p.usuario u
@@ -122,6 +130,18 @@ public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 			""")
 	List<Tag> buscarTagsMaisUsadas(@Param("usuarioId") Long usuarioId,
 			@Param("status") StatusPostagem status, Pageable pageable);
+
+	long countByStatus(StatusPostagem status);
+
+	@Query("SELECT COALESCE(SUM(p.tempoLeitura), 0) FROM Postagem p WHERE p.status = :status")
+	long somarTempoLeituraDaPlataforma(@Param("status") StatusPostagem status);
+
+	/** Só conta quem já publicou. Conta criada e abandonada não é autor. */
+	@Query("SELECT COUNT(DISTINCT p.usuario.id) FROM Postagem p WHERE p.status = :status")
+	long contarAutoresComPublicacao(@Param("status") StatusPostagem status);
+
+	@Query("SELECT COUNT(DISTINCT t.id) FROM Postagem p JOIN p.tags t WHERE p.status = :status")
+	long contarTagsEmUso(@Param("status") StatusPostagem status);
 
 	boolean existsBySlug(String slug);
 
