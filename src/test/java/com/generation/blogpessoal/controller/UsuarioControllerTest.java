@@ -25,6 +25,7 @@ import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
 import com.generation.blogpessoal.repository.PostagemRepository;
+import com.generation.blogpessoal.repository.ReacaoRepository;
 import com.generation.blogpessoal.repository.UsuarioRepository;
 import com.generation.blogpessoal.service.UsuarioService;
 import com.generation.blogpessoal.util.JwtHelper;
@@ -47,12 +48,16 @@ class UsuarioControllerTest {
 	@Autowired
 	private PostagemRepository postagemRepository;
 
+	@Autowired
+	private ReacaoRepository reacaoRepository;
+
 	private static final String BASE_URL = "/usuarios";
 	private static final String ADMIN = "root@root.com";
 	private static final String SENHA = "rootroot";
 
 	@BeforeAll
 	void start() {
+		reacaoRepository.deleteAll();
 		postagemRepository.deleteAll();
 		usuarioRepository.deleteAll();
 		usuarioService.cadastrar(TestBuilder.criarUsuario("Root", ADMIN, SENHA));

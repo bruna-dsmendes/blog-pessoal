@@ -1,6 +1,7 @@
 package com.generation.blogpessoal.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,8 +24,10 @@ import org.springframework.http.ResponseEntity;
 
 import com.generation.blogpessoal.dto.postagem.PostagemRequest;
 import com.generation.blogpessoal.dto.postagem.PostagemResponse;
+import com.generation.blogpessoal.dto.postagem.ReacaoResponse;
 import com.generation.blogpessoal.model.StatusPostagem;
 import com.generation.blogpessoal.repository.PostagemRepository;
+import com.generation.blogpessoal.repository.ReacaoRepository;
 import com.generation.blogpessoal.repository.TagRepository;
 import com.generation.blogpessoal.repository.UsuarioRepository;
 import com.generation.blogpessoal.service.UsuarioService;
@@ -49,6 +52,9 @@ class PostagemControllerTest {
 	private TagRepository tagRepository;
 
 	@Autowired
+	private ReacaoRepository reacaoRepository;
+
+	@Autowired
 	private UsuarioRepository usuarioRepository;
 
 	private static final String BASE_URL = "/postagens";
@@ -58,6 +64,7 @@ class PostagemControllerTest {
 
 	@BeforeAll
 	void start() {
+		reacaoRepository.deleteAll();
 		postagemRepository.deleteAll();
 		tagRepository.deleteAll();
 		usuarioRepository.deleteAll();
@@ -229,6 +236,86 @@ class PostagemControllerTest {
 		String token = JwtHelper.obterToken(testRestTemplate, AUTORA, SENHA);
 		return testRestTemplate.exchange(BASE_URL, HttpMethod.POST,
 				JwtHelper.comToken(TestBuilder.criarPostagem(titulo), token), PostagemResponse.class);
+	}
+
+	@Test
+	@DisplayName("12 - Deve curtir e desfazer a curtida")
+	void deveCurtirEDesfazer() {
+
+		String token = JwtHelper.obterToken(testRestTemplate, AUTORA, SENHA);
+		Long id = criar("Artigo que vai receber curtida").getBody().id();
+
+		testRestTemplate.exchange(BASE_URL + "/" + id + "/publicar", HttpMethod.PATCH,
+				JwtHelper.comToken(token), PostagemResponse.class);
+
+		ResponseEntity<ReacaoResponse> curtida = testRestTemplate.exchange(
+				BASE_URL + "/" + id + "/reagir", HttpMethod.POST,
+				JwtHelper.comToken(token), ReacaoResponse.class);
+
+		assertEquals(HttpStatus.OK, curtida.getStatusCode());
+		assertEquals(1, curtida.getBody().total());
+		assertTrue(curtida.getBody().reagi());
+
+		ResponseEntity<ReacaoResponse> desfeita = testRestTemplate.exchange(
+				BASE_URL + "/" + id + "/reagir", HttpMethod.DELETE,
+				JwtHelper.comToken(token), ReacaoResponse.class);
+
+		assertEquals(0, desfeita.getBody().total());
+		assertFalse(desfeita.getBody().reagi());
+	}
+
+	@Test
+	@DisplayName("13 - Curtir duas vezes não deve contar duas vezes")
+	void curtirDuasVezesNaoDuplica() {
+
+		String token = JwtHelper.obterToken(testRestTemplate, AUTORA, SENHA);
+		Long id = criar("Artigo com clique repetido").getBody().id();
+
+		testRestTemplate.exchange(BASE_URL + "/" + id + "/publicar", HttpMethod.PATCH,
+				JwtHelper.comToken(token), PostagemResponse.class);
+
+		testRestTemplate.exchange(BASE_URL + "/" + id + "/reagir", HttpMethod.POST,
+				JwtHelper.comToken(token), ReacaoResponse.class);
+
+		ResponseEntity<ReacaoResponse> segunda = testRestTemplate.exchange(
+				BASE_URL + "/" + id + "/reagir", HttpMethod.POST,
+				JwtHelper.comToken(token), ReacaoResponse.class);
+
+		assertEquals(HttpStatus.OK, segunda.getStatusCode());
+		assertEquals(1, segunda.getBody().total());
+	}
+
+	@Test
+	@DisplayName("14 - Não deve curtir sem token")
+	void naoDeveCurtirSemToken() {
+
+		String token = JwtHelper.obterToken(testRestTemplate, AUTORA, SENHA);
+		Long id = criar("Artigo que exige token para curtir").getBody().id();
+
+		testRestTemplate.exchange(BASE_URL + "/" + id + "/publicar", HttpMethod.PATCH,
+				JwtHelper.comToken(token), PostagemResponse.class);
+
+		ResponseEntity<String> resposta = testRestTemplate.exchange(
+				BASE_URL + "/" + id + "/reagir", HttpMethod.POST, HttpEntity.EMPTY, String.class);
+
+		assertEquals(HttpStatus.UNAUTHORIZED, resposta.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("15 - Não deve curtir rascunho")
+	void naoDeveCurtirRascunho() {
+
+		String tokenAutora = JwtHelper.obterToken(testRestTemplate, AUTORA, SENHA);
+		Long id = criar("Rascunho que nao pode ser curtido").getBody().id();
+
+		String tokenIntrusa = JwtHelper.obterToken(testRestTemplate, INTRUSA, SENHA);
+
+		ResponseEntity<String> resposta = testRestTemplate.exchange(
+				BASE_URL + "/" + id + "/reagir", HttpMethod.POST,
+				JwtHelper.comToken(tokenIntrusa), String.class);
+
+		assertEquals(HttpStatus.NOT_FOUND, resposta.getStatusCode());
+		assertNotNull(tokenAutora);
 	}
 
 }
