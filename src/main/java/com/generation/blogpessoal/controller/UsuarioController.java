@@ -20,6 +20,8 @@ import com.generation.blogpessoal.dto.PageResponse;
 import com.generation.blogpessoal.dto.usuario.DadosDoUsuarioResponse;
 import com.generation.blogpessoal.dto.usuario.ExclusaoDeContaRequest;
 import com.generation.blogpessoal.dto.usuario.LoginRequest;
+import com.generation.blogpessoal.dto.usuario.RedefinirSenhaRequest;
+import com.generation.blogpessoal.dto.usuario.SolicitarRedefinicaoRequest;
 import com.generation.blogpessoal.dto.usuario.LoginResponse;
 import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
@@ -27,6 +29,7 @@ import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
 import com.generation.blogpessoal.security.AuthCookieService;
 import com.generation.blogpessoal.service.ContaService;
+import com.generation.blogpessoal.service.RedefinicaoSenhaService;
 import com.generation.blogpessoal.service.UsuarioService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,12 +43,14 @@ public class UsuarioController {
 
 	private final UsuarioService usuarioService;
 	private final ContaService contaService;
+	private final RedefinicaoSenhaService redefinicaoSenhaService;
 	private final AuthCookieService authCookieService;
 
 	public UsuarioController(UsuarioService usuarioService, ContaService contaService,
-			AuthCookieService authCookieService) {
+			RedefinicaoSenhaService redefinicaoSenhaService, AuthCookieService authCookieService) {
 		this.usuarioService = usuarioService;
 		this.contaService = contaService;
+		this.redefinicaoSenhaService = redefinicaoSenhaService;
 		this.authCookieService = authCookieService;
 	}
 
@@ -108,6 +113,20 @@ public class UsuarioController {
 		return ResponseEntity.noContent()
 				.header(HttpHeaders.SET_COOKIE, authCookieService.limpar().toString())
 				.build();
+	}
+
+	@PostMapping("/esqueci-a-senha")
+	@Operation(summary = "Envia o link de redefinição. Responde igual exista ou não a conta")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void solicitarRedefinicao(@Valid @RequestBody SolicitarRedefinicaoRequest request) {
+		redefinicaoSenhaService.solicitar(request.usuario());
+	}
+
+	@PostMapping("/redefinir-senha")
+	@Operation(summary = "Troca a senha pelo token do e-mail e encerra as sessões abertas")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void redefinirSenha(@Valid @RequestBody RedefinirSenhaRequest request) {
+		redefinicaoSenhaService.redefinir(request);
 	}
 
 	@PostMapping("/logar")

@@ -1,5 +1,10 @@
 package com.generation.blogpessoal.controller;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,6 +30,10 @@ import com.generation.blogpessoal.dto.usuario.DadosDoUsuarioResponse;
 import com.generation.blogpessoal.dto.usuario.ExclusaoDeContaRequest;
 import com.generation.blogpessoal.dto.usuario.ExclusaoDeContaRequest.DestinoDosArtigos;
 import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
+import com.generation.blogpessoal.dto.usuario.RedefinirSenhaRequest;
+import com.generation.blogpessoal.dto.usuario.SolicitarRedefinicaoRequest;
+import com.generation.blogpessoal.model.TokenRedefinicaoSenha;
+import com.generation.blogpessoal.repository.TokenRedefinicaoSenhaRepository;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
 import com.generation.blogpessoal.repository.PostagemRepository;
@@ -54,12 +63,16 @@ class UsuarioControllerTest {
 	@Autowired
 	private ReacaoRepository reacaoRepository;
 
+	@Autowired
+	private TokenRedefinicaoSenhaRepository tokenRepository;
+
 	private static final String BASE_URL = "/usuarios";
 	private static final String ADMIN = "root@root.com";
 	private static final String SENHA = "rootroot";
 
 	@BeforeAll
 	void start() {
+		tokenRepository.deleteAll();
 		reacaoRepository.deleteAll();
 		postagemRepository.deleteAll();
 		usuarioRepository.deleteAll();
@@ -360,6 +373,101 @@ class UsuarioControllerTest {
 		String setCookie = resposta.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
 		assertNotNull(setCookie);
 		assertTrue(setCookie.contains("Max-Age=0"));
+	}
+
+	@Test
+	@DisplayName("21 - Esqueci a senha deve responder igual para e-mail inexistente")
+	void esqueciASenhaNaoRevelaCadastro() {
+
+		ResponseEntity<Void> existente = testRestTemplate.exchange(
+				BASE_URL + "/esqueci-a-senha", HttpMethod.POST,
+				new HttpEntity<>(new SolicitarRedefinicaoRequest(ADMIN)), Void.class);
+
+		ResponseEntity<Void> inexistente = testRestTemplate.exchange(
+				BASE_URL + "/esqueci-a-senha", HttpMethod.POST,
+				new HttpEntity<>(new SolicitarRedefinicaoRequest("ninguem@email.com.br")), Void.class);
+
+		assertEquals(HttpStatus.NO_CONTENT, existente.getStatusCode());
+		assertEquals(HttpStatus.NO_CONTENT, inexistente.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("22 - Token inválido não deve redefinir a senha")
+	void tokenInvalidoNaoRedefine() {
+
+		ResponseEntity<String> resposta = testRestTemplate.exchange(
+				BASE_URL + "/redefinir-senha", HttpMethod.POST,
+				new HttpEntity<>(new RedefinirSenhaRequest("nao-existe", "novasenha123")), String.class);
+
+		assertEquals(HttpStatus.BAD_REQUEST, resposta.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("23 - Deve redefinir a senha e invalidar a sessão anterior")
+	void deveRedefinirEDerrubarSessaoAnterior() throws Exception {
+
+		String email = "redefine@email.com.br";
+		usuarioService.cadastrar(TestBuilder.criarUsuario("Redefine Senha", email, "12345678"));
+
+		String tokenDaSessao = JwtHelper.obterToken(testRestTemplate, email, "12345678");
+
+		String segredo = "token-de-teste-" + System.nanoTime();
+		tokenRepository.save(new TokenRedefinicaoSenha(
+				usuarioService.obterPorEmail(email),
+				sha256(segredo),
+				LocalDateTime.now().plusMinutes(30)));
+
+		ResponseEntity<Void> redefinicao = testRestTemplate.exchange(
+				BASE_URL + "/redefinir-senha", HttpMethod.POST,
+				new HttpEntity<>(new RedefinirSenhaRequest(segredo, "senhanova123")), Void.class);
+
+		assertEquals(HttpStatus.NO_CONTENT, redefinicao.getStatusCode());
+
+		ResponseEntity<LoginResponse> comSenhaNova = testRestTemplate.exchange(
+				BASE_URL + "/logar", HttpMethod.POST,
+				new HttpEntity<>(TestBuilder.criarLogin(email, "senhanova123")), LoginResponse.class);
+
+		assertEquals(HttpStatus.OK, comSenhaNova.getStatusCode());
+
+		ResponseEntity<String> comSenhaAntiga = testRestTemplate.exchange(
+				BASE_URL + "/logar", HttpMethod.POST,
+				new HttpEntity<>(TestBuilder.criarLogin(email, "12345678")), String.class);
+
+		assertEquals(HttpStatus.UNAUTHORIZED, comSenhaAntiga.getStatusCode());
+
+		// O token emitido antes da troca não vale mais.
+		ResponseEntity<String> sessaoAnterior = testRestTemplate.exchange(
+				BASE_URL + "/me", HttpMethod.GET, JwtHelper.comToken(tokenDaSessao), String.class);
+
+		assertEquals(HttpStatus.UNAUTHORIZED, sessaoAnterior.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("24 - Token usado não deve servir uma segunda vez")
+	void tokenNaoServeDuasVezes() throws Exception {
+
+		String email = "token_unico@email.com.br";
+		usuarioService.cadastrar(TestBuilder.criarUsuario("Token Unico", email, "12345678"));
+
+		String segredo = "token-unico-" + System.nanoTime();
+		tokenRepository.save(new TokenRedefinicaoSenha(
+				usuarioService.obterPorEmail(email),
+				sha256(segredo),
+				LocalDateTime.now().plusMinutes(30)));
+
+		testRestTemplate.exchange(BASE_URL + "/redefinir-senha", HttpMethod.POST,
+				new HttpEntity<>(new RedefinirSenhaRequest(segredo, "primeirasenha1")), Void.class);
+
+		ResponseEntity<String> segunda = testRestTemplate.exchange(
+				BASE_URL + "/redefinir-senha", HttpMethod.POST,
+				new HttpEntity<>(new RedefinirSenhaRequest(segredo, "segundasenha1")), String.class);
+
+		assertEquals(HttpStatus.BAD_REQUEST, segunda.getStatusCode());
+	}
+
+	private static String sha256(String valor) throws Exception {
+		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		return HexFormat.of().formatHex(digest.digest(valor.getBytes(StandardCharsets.UTF_8)));
 	}
 
 }
