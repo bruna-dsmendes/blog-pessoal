@@ -28,12 +28,6 @@ public class ReacaoService {
 		this.usuarioService = usuarioService;
 	}
 
-	/**
-	 * Reagir é idempotente: clicar duas vezes não gera erro nem conta duas vezes.
-	 *
-	 * Botão que responde 409 quando a rede engasga e a requisição sai repetida
-	 * transforma um problema invisível em erro na cara de quem usa.
-	 */
 	@Transactional
 	public ReacaoResponse reagir(Long postagemId, String emailLogado) {
 
@@ -44,11 +38,7 @@ public class ReacaoService {
 			try {
 				reacaoRepository.save(new Reacao(postagem, usuario, TipoReacao.CURTIR));
 			} catch (DataIntegrityViolationException e) {
-				/*
-				 * Dois cliques simultâneos passam pela verificação acima ao mesmo
-				 * tempo. A constraint única do banco barra o segundo, e o estado
-				 * final é o mesmo que a pessoa esperava.
-				 */
+				
 			}
 		}
 

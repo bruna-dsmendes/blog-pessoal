@@ -1,19 +1,14 @@
 package com.generation.blogpessoal.dto.postagem;
 
-import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-
 import com.generation.blogpessoal.dto.tag.TagResponse;
 import com.generation.blogpessoal.model.Postagem;
 import com.generation.blogpessoal.model.StatusPostagem;
 
-/*
- * Resposta do feed, sem o campo conteudo.
- *
- * Um artigo pode ter 50 mil caracteres. Mandar isso para 10 itens de uma
- * listagem seriam megabytes de JSON que a tela do feed nem usa.
- */
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+
+// Resposta do feed, sem o campo conteudo.
 public record PostagemResumoResponse(
 		Long id,
 		String titulo,

@@ -1,24 +1,15 @@
 package com.generation.blogpessoal.security;
 
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Optional;
-
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Optional;
 
-/**
- * Monta e lê o cookie de autenticação.
- *
- * O ponto do httpOnly é que o JavaScript da página não consegue ler esse valor.
- * Com o token em localStorage, qualquer XSS rouba a sessão inteira. Aqui, mesmo
- * um script injetado não tem como extrair o token: ele consegue no máximo fazer
- * requisições enquanto a pessoa está na página.
- */
 @Component
 public class AuthCookieService {
 

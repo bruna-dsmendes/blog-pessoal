@@ -1,17 +1,16 @@
 package com.generation.blogpessoal.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.generation.blogpessoal.model.Postagem;
+import com.generation.blogpessoal.model.StatusPostagem;
+import com.generation.blogpessoal.model.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.generation.blogpessoal.model.Postagem;
-import com.generation.blogpessoal.model.StatusPostagem;
-import com.generation.blogpessoal.model.Tag;
+import java.util.List;
+import java.util.Optional;
 
 public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 
@@ -57,13 +56,6 @@ public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 	Page<Postagem> buscarPorTermo(@Param("termo") String termo,
 			@Param("status") StatusPostagem status, Pageable pageable);
 
-	/*
-	 * Duas consultas em vez de uma com ":status IS NULL". Comparar parametro com
-	 * NULL em JPQL deixa o Postgres sem conseguir inferir o tipo do parametro, e
-	 * o erro que aparece nao tem nada a ver com a causa.
-	 *
-	 * Ambas incluem rascunhos: so sao chamadas com o e-mail do proprio autor.
-	 */
 	@Query(value = """
 			SELECT p FROM Postagem p
 			JOIN FETCH p.usuario u

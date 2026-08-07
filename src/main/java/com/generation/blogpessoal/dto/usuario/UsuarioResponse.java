@@ -4,7 +4,7 @@ import com.generation.blogpessoal.model.Usuario;
 
 /**
  * Não existe campo senha aqui. Esse é o ponto: a entidade Usuario nunca
- * chega ao Jackson, então o hash não tem como vazar por descuido.
+ * chega, então o hash não tem como vazar por descuido.
  *
  * Inclui o e-mail porque só o próprio dono vê essa resposta.
  */

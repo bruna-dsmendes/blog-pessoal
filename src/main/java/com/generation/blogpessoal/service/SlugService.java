@@ -1,11 +1,11 @@
 package com.generation.blogpessoal.service;
 
+import org.springframework.stereotype.Service;
+
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
-import org.springframework.stereotype.Service;
 
 /**
  * Converte texto livre em slug de URL.
@@ -40,13 +40,6 @@ public class SlugService {
 		return slug;
 	}
 
-	/**
-	 * Acrescenta sufixo numérico até encontrar um slug livre.
-	 *
-	 * Ainda assim existe janela de corrida entre duas requisições simultâneas.
-	 * A constraint UNIQUE no banco é quem garante a unicidade de fato: essa
-	 * verificação serve para o caso comum, não como trava.
-	 */
 	public String gerarUnico(String texto, Predicate<String> jaExiste) {
 
 		String base = normalizar(texto);

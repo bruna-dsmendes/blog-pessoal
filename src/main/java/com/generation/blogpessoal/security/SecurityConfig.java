@@ -56,14 +56,9 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
 						.requestMatchers(HttpMethod.OPTIONS).permitAll()
-
-						/*
-						 * Precisa vir antes do permitAll abaixo: a ordem das regras
-						 * importa, e /postagens/minhas cai no padrao /postagens/**.
-						 */
 						.requestMatchers(HttpMethod.GET, "/postagens/minhas").authenticated()
 
-						// Perfil de autor é página aberta, como no Medium.
+						// Perfil de autor é página aberta
 						.requestMatchers(HttpMethod.GET, "/usuarios/perfil/*").permitAll()
 
 						/*
