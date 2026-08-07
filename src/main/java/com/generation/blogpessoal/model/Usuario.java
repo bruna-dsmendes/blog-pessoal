@@ -1,5 +1,6 @@
 package com.generation.blogpessoal.model;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +42,9 @@ public class Usuario {
 
 	@Column(length = 280)
 	private String bio;
+
+	@Column(name = "senha_alterada_em")
+	private LocalDateTime senhaAlteradaEm;
 
 	@OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("ordem ASC")
@@ -93,6 +97,14 @@ public class Usuario {
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+
+	public LocalDateTime getSenhaAlteradaEm() {
+		return senhaAlteradaEm;
+	}
+
+	public void setSenhaAlteradaEm(LocalDateTime senhaAlteradaEm) {
+		this.senhaAlteradaEm = senhaAlteradaEm;
 	}
 
 	public String getBio() {
