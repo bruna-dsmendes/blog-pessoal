@@ -26,10 +26,10 @@ postagens criadas depois da migração.
 Os endpoints `/temas` continuam de pé, só que em modo leitura e marcados como
 obsoletos no Swagger.
 
-A **V5** é a fase de contração e ainda não existe neste repositório. Ela remove
+A **V7** é a fase de contração e ainda não existe neste repositório. Ela remove
 `texto`, `tema_id`, `tb_temas`, a função `fn_slugify`, e junto com ela saem
 `Tema`, `TemaService`, `TemaController`, `TemaRepository` e `TemaResponse`. Só
-escreva a V5 depois que o front estiver rodando com tags em produção.
+escreva a V7 depois que o front estiver rodando com tags em produção.
 
 ## Decisões
 

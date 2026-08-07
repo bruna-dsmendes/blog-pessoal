@@ -197,8 +197,9 @@ src/main/resources/db/migration    # migrations Flyway, V1 a V4
 - [x] **Fase 1** — DTOs, autorização por autor, paginação, Flyway, tratamento de erros
 - [x] **Fase 2** — Markdown, slug, rascunho e publicação, tags N:N
 - [ ] **Fase 3** — Upload de imagens, embed de vídeo, sanitização do markdown
-- [ ] **Fase 4** — Comentários e reações
-- [ ] **Contração** — V5 remove `texto`, `tema_id` e `tb_temas`
+- [x] **Fase 4a** — Reações
+- [ ] **Fase 4b** — Comentários
+- [ ] **Contração** — V7 remove `texto`, `tema_id` e `tb_temas`
 
 ---
 

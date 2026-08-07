@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Mantido apenas para leitura enquanto o front migra para /tags.
- * Removido junto com a migration V5.
+ * Removido junto com a migration V7.
  *
  * @deprecated use {@link TagController}.
  */

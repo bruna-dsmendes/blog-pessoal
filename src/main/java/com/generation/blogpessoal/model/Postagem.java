@@ -67,7 +67,7 @@ public class Postagem {
 	/*
 	 * Escrita dupla durante a janela de expand and contract.
 	 * A aplicação nova não lê esse campo, mas continua preenchendo para que a
-	 * versão anterior siga funcionando em caso de rollback. Sai na V5.
+	 * versão anterior siga funcionando em caso de rollback. Sai na V7.
 	 */
 	@Deprecated
 	@Column(columnDefinition = "TEXT")
