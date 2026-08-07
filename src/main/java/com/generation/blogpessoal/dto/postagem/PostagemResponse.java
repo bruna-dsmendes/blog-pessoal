@@ -22,9 +22,16 @@ public record PostagemResponse(
 		LocalDateTime atualizadoEm,
 		LocalDateTime publicadoEm,
 		AutorResponse autor,
-		List<TagResponse> tags) {
+		List<TagResponse> tags,
+		long reacoes,
+		boolean reagi) {
 
+	/** Usada onde o estado das reações não é relevante, como logo após salvar. */
 	public static PostagemResponse de(Postagem p) {
+		return de(p, 0, false);
+	}
+
+	public static PostagemResponse de(Postagem p, long reacoes, boolean reagi) {
 		return new PostagemResponse(
 				p.getId(),
 				p.getTitulo(),
@@ -41,7 +48,9 @@ public record PostagemResponse(
 				p.getTags().stream()
 						.map(TagResponse::de)
 						.sorted(Comparator.comparing(TagResponse::nome))
-						.toList());
+						.toList(),
+				reacoes,
+				reagi);
 	}
 
 }

@@ -23,8 +23,10 @@ import com.generation.blogpessoal.dto.PageResponse;
 import com.generation.blogpessoal.dto.postagem.PostagemRequest;
 import com.generation.blogpessoal.dto.postagem.PostagemResponse;
 import com.generation.blogpessoal.dto.postagem.PostagemResumoResponse;
+import com.generation.blogpessoal.dto.postagem.ReacaoResponse;
 import com.generation.blogpessoal.model.StatusPostagem;
 import com.generation.blogpessoal.service.PostagemService;
+import com.generation.blogpessoal.service.ReacaoService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,9 +38,11 @@ import jakarta.validation.Valid;
 public class PostagemController {
 
 	private final PostagemService postagemService;
+	private final ReacaoService reacaoService;
 
-	public PostagemController(PostagemService postagemService) {
+	public PostagemController(PostagemService postagemService, ReacaoService reacaoService) {
 		this.postagemService = postagemService;
+		this.reacaoService = reacaoService;
 	}
 
 	// ---------------------------------------------------------------- leitura
@@ -132,6 +136,24 @@ public class PostagemController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void excluir(@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
 		postagemService.excluir(id, usuarioLogado.getUsername());
+	}
+
+	// --------------------------------------------------------------- reações
+
+	@PostMapping("/{id}/reagir")
+	@Operation(summary = "Curte o artigo. Repetir a chamada não duplica a reação")
+	public ResponseEntity<ReacaoResponse> reagir(
+			@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(reacaoService.reagir(id, usuarioLogado.getUsername()));
+	}
+
+	@DeleteMapping("/{id}/reagir")
+	@Operation(summary = "Desfaz a curtida")
+	public ResponseEntity<ReacaoResponse> desfazerReacao(
+			@PathVariable Long id, @AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(reacaoService.desfazer(id, usuarioLogado.getUsername()));
 	}
 
 	// ----------------------------------------------------------- ciclo de vida

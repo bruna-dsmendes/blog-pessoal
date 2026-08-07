@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.generation.blogpessoal.dto.postagem.PostagemRequest;
 import com.generation.blogpessoal.dto.postagem.PostagemResponse;
 import com.generation.blogpessoal.dto.postagem.PostagemResumoResponse;
+import com.generation.blogpessoal.dto.postagem.ReacaoResponse;
 import com.generation.blogpessoal.exception.OperacaoNaoPermitidaException;
 import com.generation.blogpessoal.exception.RecursoNaoEncontradoException;
 import com.generation.blogpessoal.exception.RegraDeNegocioException;
@@ -27,13 +28,15 @@ public class PostagemService {
 	private final UsuarioService usuarioService;
 	private final TagService tagService;
 	private final SlugService slugService;
+	private final ReacaoService reacaoService;
 
 	public PostagemService(PostagemRepository postagemRepository, UsuarioService usuarioService,
-			TagService tagService, SlugService slugService) {
+			TagService tagService, SlugService slugService, ReacaoService reacaoService) {
 		this.postagemRepository = postagemRepository;
 		this.usuarioService = usuarioService;
 		this.tagService = tagService;
 		this.slugService = slugService;
+		this.reacaoService = reacaoService;
 	}
 
 	// ---------------------------------------------------------------- leitura
@@ -80,7 +83,7 @@ public class PostagemService {
 				.orElseThrow(() -> RecursoNaoEncontradoException.de("Postagem", id));
 
 		validarVisibilidade(postagem, emailLogado);
-		return PostagemResponse.de(postagem);
+		return comReacoes(postagem, emailLogado);
 	}
 
 	@Transactional(readOnly = true)
@@ -89,7 +92,23 @@ public class PostagemService {
 				.orElseThrow(() -> new RecursoNaoEncontradoException("Postagem não encontrada: " + slug));
 
 		validarVisibilidade(postagem, emailLogado);
-		return PostagemResponse.de(postagem);
+		return comReacoes(postagem, emailLogado);
+	}
+
+	/*
+	 * Duas consultas extras por artigo aberto. Como é sempre um só, não existe
+	 * N+1 aqui. No feed a história é outra, e por isso o resumo não traz esse
+	 * número por enquanto.
+	 */
+	private PostagemResponse comReacoes(Postagem postagem, String emailLogado) {
+
+		Long usuarioId = emailLogado == null
+				? null
+				: usuarioService.obterPorEmail(emailLogado).getId();
+
+		ReacaoResponse reacoes = reacaoService.estado(postagem.getId(), usuarioId);
+
+		return PostagemResponse.de(postagem, reacoes.total(), reacoes.reagi());
 	}
 
 	// ------------------------------------------------------------------ escrita
