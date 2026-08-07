@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -142,6 +143,19 @@ public interface PostagemRepository extends JpaRepository<Postagem, Long> {
 
 	@Query("SELECT COUNT(DISTINCT t.id) FROM Postagem p JOIN p.tags t WHERE p.status = :status")
 	long contarTagsEmUso(@Param("status") StatusPostagem status);
+
+	@Query("""
+			SELECT p FROM Postagem p
+			LEFT JOIN FETCH p.usuario
+			LEFT JOIN FETCH p.tags
+			WHERE p.usuario.id = :usuarioId
+			""")
+	List<Postagem> buscarTodasDoUsuario(@Param("usuarioId") Long usuarioId);
+
+	/** Anonimização do art. 12: o artigo fica, o vínculo com a pessoa some. */
+	@Modifying
+	@Query("UPDATE Postagem p SET p.usuario = NULL WHERE p.usuario.id = :usuarioId")
+	void desvincularAutor(@Param("usuarioId") Long usuarioId);
 
 	boolean existsBySlug(String slug);
 

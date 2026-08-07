@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.generation.blogpessoal.dto.PageResponse;
+import com.generation.blogpessoal.dto.usuario.DadosDoUsuarioResponse;
+import com.generation.blogpessoal.dto.usuario.ExclusaoDeContaRequest;
 import com.generation.blogpessoal.dto.usuario.LoginRequest;
 import com.generation.blogpessoal.dto.usuario.LoginResponse;
 import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
@@ -24,6 +26,7 @@ import com.generation.blogpessoal.dto.usuario.UsuarioAtualizarRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
 import com.generation.blogpessoal.security.AuthCookieService;
+import com.generation.blogpessoal.service.ContaService;
 import com.generation.blogpessoal.service.UsuarioService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +39,13 @@ import jakarta.validation.Valid;
 public class UsuarioController {
 
 	private final UsuarioService usuarioService;
+	private final ContaService contaService;
 	private final AuthCookieService authCookieService;
 
-	public UsuarioController(UsuarioService usuarioService, AuthCookieService authCookieService) {
+	public UsuarioController(UsuarioService usuarioService, ContaService contaService,
+			AuthCookieService authCookieService) {
 		this.usuarioService = usuarioService;
+		this.contaService = contaService;
 		this.authCookieService = authCookieService;
 	}
 
@@ -81,6 +87,27 @@ public class UsuarioController {
 			@AuthenticationPrincipal UserDetails usuarioLogado) {
 
 		return ResponseEntity.ok(usuarioService.atualizar(usuarioLogado.getUsername(), request));
+	}
+
+	@GetMapping("/me/dados")
+	@Operation(summary = "Exporta todos os seus dados, incluindo rascunhos (LGPD, art. 18, V)")
+	public ResponseEntity<DadosDoUsuarioResponse> exportarDados(
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		return ResponseEntity.ok(contaService.exportar(usuarioLogado.getUsername()));
+	}
+
+	@PostMapping("/excluir-conta")
+	@Operation(summary = "Exclui a conta e encerra a sessão (LGPD, art. 18, VI)")
+	public ResponseEntity<Void> excluirConta(
+			@Valid @RequestBody ExclusaoDeContaRequest request,
+			@AuthenticationPrincipal UserDetails usuarioLogado) {
+
+		contaService.excluir(usuarioLogado.getUsername(), request);
+
+		return ResponseEntity.noContent()
+				.header(HttpHeaders.SET_COOKIE, authCookieService.limpar().toString())
+				.build();
 	}
 
 	@PostMapping("/logar")
