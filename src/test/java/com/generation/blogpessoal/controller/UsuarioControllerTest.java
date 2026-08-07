@@ -21,6 +21,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.generation.blogpessoal.dto.usuario.LoginResponse;
+import com.generation.blogpessoal.dto.usuario.DadosDoUsuarioResponse;
+import com.generation.blogpessoal.dto.usuario.ExclusaoDeContaRequest;
+import com.generation.blogpessoal.dto.usuario.ExclusaoDeContaRequest.DestinoDosArtigos;
 import com.generation.blogpessoal.dto.usuario.PerfilPublicoResponse;
 import com.generation.blogpessoal.dto.usuario.UsuarioRequest;
 import com.generation.blogpessoal.dto.usuario.UsuarioResponse;
@@ -292,6 +295,71 @@ class UsuarioControllerTest {
 				BASE_URL + "/atualizar", HttpMethod.PUT, requisicao, String.class);
 
 		assertEquals(HttpStatus.CONFLICT, resposta.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("17 - Deve exportar os dados da própria conta")
+	void deveExportarOsProprios() {
+
+		usuarioService.cadastrar(TestBuilder.criarUsuario("Exporta Dados", "exporta@email.com.br", "12345678"));
+		String token = JwtHelper.obterToken(testRestTemplate, "exporta@email.com.br", "12345678");
+
+		ResponseEntity<DadosDoUsuarioResponse> resposta = testRestTemplate.exchange(
+				BASE_URL + "/me/dados", HttpMethod.GET, JwtHelper.comToken(token),
+				DadosDoUsuarioResponse.class);
+
+		assertEquals(HttpStatus.OK, resposta.getStatusCode());
+		assertNotNull(resposta.getBody());
+		assertEquals("exporta@email.com.br", resposta.getBody().perfil().usuario());
+		assertNotNull(resposta.getBody().geradoEm());
+	}
+
+	@Test
+	@DisplayName("18 - Exportação deve exigir sessão")
+	void exportacaoExigeSessao() {
+
+		ResponseEntity<String> resposta = testRestTemplate.exchange(
+				BASE_URL + "/me/dados", HttpMethod.GET, HttpEntity.EMPTY, String.class);
+
+		assertEquals(HttpStatus.UNAUTHORIZED, resposta.getStatusCode());
+	}
+
+	@Test
+	@DisplayName("19 - Não deve excluir a conta com a senha errada")
+	void naoDeveExcluirComSenhaErrada() {
+
+		usuarioService.cadastrar(TestBuilder.criarUsuario("Senha Errada", "senha_errada@email.com.br", "12345678"));
+		String token = JwtHelper.obterToken(testRestTemplate, "senha_errada@email.com.br", "12345678");
+
+		HttpEntity<?> requisicao = JwtHelper.comToken(
+				new ExclusaoDeContaRequest("outra-senha", DestinoDosArtigos.ANONIMIZAR), token);
+
+		ResponseEntity<String> resposta = testRestTemplate.exchange(
+				BASE_URL + "/excluir-conta", HttpMethod.POST, requisicao, String.class);
+
+		assertEquals(HttpStatus.UNAUTHORIZED, resposta.getStatusCode());
+		assertTrue(usuarioRepository.existsByUsuario("senha_errada@email.com.br"));
+	}
+
+	@Test
+	@DisplayName("20 - Deve excluir a conta e limpar o cookie")
+	void deveExcluirAConta() {
+
+		usuarioService.cadastrar(TestBuilder.criarUsuario("Vai Sumir", "vai_sumir@email.com.br", "12345678"));
+		String token = JwtHelper.obterToken(testRestTemplate, "vai_sumir@email.com.br", "12345678");
+
+		HttpEntity<?> requisicao = JwtHelper.comToken(
+				new ExclusaoDeContaRequest("12345678", DestinoDosArtigos.ANONIMIZAR), token);
+
+		ResponseEntity<Void> resposta = testRestTemplate.exchange(
+				BASE_URL + "/excluir-conta", HttpMethod.POST, requisicao, Void.class);
+
+		assertEquals(HttpStatus.NO_CONTENT, resposta.getStatusCode());
+		assertFalse(usuarioRepository.existsByUsuario("vai_sumir@email.com.br"));
+
+		String setCookie = resposta.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+		assertNotNull(setCookie);
+		assertTrue(setCookie.contains("Max-Age=0"));
 	}
 
 }
