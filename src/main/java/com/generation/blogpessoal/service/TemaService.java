@@ -9,6 +9,12 @@ import com.generation.blogpessoal.dto.tema.TemaResponse;
 import com.generation.blogpessoal.exception.RecursoNaoEncontradoException;
 import com.generation.blogpessoal.repository.TemaRepository;
 
+/**
+ * Os temas viraram tags na V3. Isto existe para clientes antigos continuarem
+ * lendo durante a migração, e sai junto com a V7.
+ *
+ * @deprecated use {@link TagService}.
+ */
 @Deprecated(forRemoval = true)
 @Service
 public class TemaService {

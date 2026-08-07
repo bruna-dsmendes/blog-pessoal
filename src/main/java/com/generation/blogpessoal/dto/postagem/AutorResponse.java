@@ -2,7 +2,7 @@ package com.generation.blogpessoal.dto.postagem;
 
 import com.generation.blogpessoal.model.Usuario;
 
-/** O username permite ao front montar o link para o perfil público. */
+/** O username monta o link do perfil sem uma requisição extra. */
 public record AutorResponse(Long id, String nome, String username, String foto) {
 
 	public static AutorResponse de(Usuario usuario) {

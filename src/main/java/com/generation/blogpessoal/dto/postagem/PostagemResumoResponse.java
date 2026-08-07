@@ -1,14 +1,14 @@
 package com.generation.blogpessoal.dto.postagem;
 
-import com.generation.blogpessoal.dto.tag.TagResponse;
-import com.generation.blogpessoal.model.Postagem;
-import com.generation.blogpessoal.model.StatusPostagem;
-
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
-// Resposta do feed, sem o campo conteudo.
+import com.generation.blogpessoal.dto.tag.TagResponse;
+import com.generation.blogpessoal.model.Postagem;
+import com.generation.blogpessoal.model.StatusPostagem;
+
+/** Sem o campo conteudo: 50 mil caracteres por item inviabilizam a listagem. */
 public record PostagemResumoResponse(
 		Long id,
 		String titulo,

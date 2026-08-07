@@ -6,13 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- * A senha é opcional aqui de propósito.
- *
- * No código antigo todo update re-encodava o campo senha. Se o front devolvesse
- * o hash que recebeu, o hash virava senha e era encodado de novo, deixando o
- * usuário sem conseguir logar.
- */
+/** Senha opcional: re-encodar o hash recebido de volta trancaria a conta. */
 public record UsuarioAtualizarRequest(
 
 		@NotBlank(message = "O nome é obrigatório")

@@ -2,13 +2,12 @@ package com.generation.blogpessoal.model;
 
 public enum StatusPostagem {
 
-	/** Só o autor enxerga. */
 	RASCUNHO,
 
-	/** Visível no feed público. */
+	/** Único status visível no feed público. */
 	PUBLICADO,
 
-	/** Sai do feed, mas continua acessível pela URL direta para quem tem o link. */
+	/** Sai do feed, mas segue acessível pela URL direta. */
 	ARQUIVADO
 
 }

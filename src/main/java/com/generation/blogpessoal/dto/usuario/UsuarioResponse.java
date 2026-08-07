@@ -2,12 +2,7 @@ package com.generation.blogpessoal.dto.usuario;
 
 import com.generation.blogpessoal.model.Usuario;
 
-/**
- * Não existe campo senha aqui. Esse é o ponto: a entidade Usuario nunca
- * chega, então o hash não tem como vazar por descuido.
- *
- * Inclui o e-mail porque só o próprio dono vê essa resposta.
- */
+/** Sem campo senha: a entidade nunca é serializada, então o hash não vaza. */
 public record UsuarioResponse(
 		Long id,
 		String nome,

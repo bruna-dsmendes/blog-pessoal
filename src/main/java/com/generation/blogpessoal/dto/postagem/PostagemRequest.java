@@ -5,11 +5,7 @@ import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/*
- * Não existe campo status aqui de propósito. Publicar não é editar: o status
- * muda por endpoints próprios, o que evita despublicar um artigo sem querer ao
- * salvar uma correção de vírgula.
- */
+/** Sem status: publicar tem endpoint próprio, para não acontecer sem querer. */
 public record PostagemRequest(
 
 		@NotBlank(message = "O título é obrigatório")

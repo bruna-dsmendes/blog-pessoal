@@ -5,12 +5,7 @@ import java.util.List;
 import com.generation.blogpessoal.dto.tag.TagResponse;
 import com.generation.blogpessoal.model.Usuario;
 
-/*
- * Perfil de autor, visível para qualquer pessoa.
- *
- * Não tem e-mail. O endereço não diz nada sobre quem escreve e, numa página
- * aberta, vira endereço exposto para quem coleta e-mail.
- */
+/** Página aberta, por isso sem e-mail. */
 public record PerfilPublicoResponse(
 		String username,
 		String nome,

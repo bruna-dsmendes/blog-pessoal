@@ -3,10 +3,7 @@ package com.generation.blogpessoal.exception;
 import java.time.Instant;
 import java.util.Map;
 
-/**
- * Formato único de erro da API. Todo erro sai assim, o que deixa o
- * tratamento no front previsível.
- */
+/** Formato único de erro, para o tratamento no front ser previsível. */
 public record ErroResposta(
 		Instant timestamp,
 		int status,

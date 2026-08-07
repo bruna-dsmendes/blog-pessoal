@@ -1,5 +1,12 @@
 package com.generation.blogpessoal.service;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.generation.blogpessoal.dto.postagem.PostagemRequest;
 import com.generation.blogpessoal.dto.postagem.PostagemResponse;
 import com.generation.blogpessoal.dto.postagem.PostagemResumoResponse;
@@ -11,12 +18,6 @@ import com.generation.blogpessoal.model.Postagem;
 import com.generation.blogpessoal.model.StatusPostagem;
 import com.generation.blogpessoal.model.Usuario;
 import com.generation.blogpessoal.repository.PostagemRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Service
 public class PostagemService {
@@ -65,7 +66,7 @@ public class PostagemService {
 				.map(PostagemResumoResponse::de);
 	}
 
-	// Listagem do autor, incluindo rascunhos. Exige autenticação no controller.
+	/** Listagem do autor, incluindo rascunhos. Exige autenticação no controller. */
 	@Transactional(readOnly = true)
 	public Page<PostagemResumoResponse> minhas(String emailAutor, StatusPostagem status, Pageable pageable) {
 
@@ -221,7 +222,12 @@ public class PostagemService {
 
 		return postagem;
 	}
-	
+
+	/*
+	 * Rascunho responde 404 para quem não é o autor, e não 403.
+	 * Um 403 confirmaria que o recurso existe, o que já é informação: daria para
+	 * varrer ids e descobrir quantos rascunhos alguém tem.
+	 */
 	private void validarVisibilidade(Postagem postagem, String emailLogado) {
 
 		if (postagem.getStatus() != StatusPostagem.RASCUNHO) {

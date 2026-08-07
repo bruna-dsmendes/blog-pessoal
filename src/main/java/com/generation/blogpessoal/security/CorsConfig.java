@@ -10,13 +10,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
- * CORS em um lugar só, controlado por variável de ambiente.
- *
- * Antes havia @CrossOrigin(origins = "*") repetido em cada controller: qualquer
- * site na internet podia consumir a API, e mudar a política exigia editar
- * três arquivos.
- */
+/** Origens permitidas por variável de ambiente, definidas em um lugar só. */
 @Configuration
 public class CorsConfig {
 
