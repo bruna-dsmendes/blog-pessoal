@@ -60,6 +60,10 @@ public class JwtService {
 		return extractAllClaims(token).getExpiration();
 	}
 
+	public Date extractIssuedAt(String token) {
+		return extractAllClaims(token).getIssuedAt();
+	}
+
 	public boolean validateToken(String token, UserDetails userDetails) {
 		Claims claims = extractAllClaims(token);
 		return claims.getSubject().equals(userDetails.getUsername())

@@ -24,6 +24,8 @@ public class SecurityConfig {
 			"/usuarios/logar",
 			"/usuarios/deslogar",
 			"/usuarios/cadastrar",
+			"/usuarios/esqueci-a-senha",
+			"/usuarios/redefinir-senha",
 			"/error/**",
 			"/", "/docs", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**"
 	};

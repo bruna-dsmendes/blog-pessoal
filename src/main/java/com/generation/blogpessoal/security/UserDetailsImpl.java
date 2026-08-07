@@ -1,5 +1,6 @@
 package com.generation.blogpessoal.security;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -12,12 +13,19 @@ public class UserDetailsImpl implements UserDetails {
 
 	private static final long serialVersionUID = 1L;
 
-	private String username;
-	private String password;
+	private final String username;
+	private final String password;
+	private final transient LocalDateTime senhaAlteradaEm;
 
 	public UserDetailsImpl(Usuario user) {
 		this.username = user.getUsuario();
 		this.password = user.getSenha();
+		this.senhaAlteradaEm = user.getSenhaAlteradaEm();
+	}
+
+	/** Usada pelo filtro para descartar token emitido antes da troca de senha. */
+	public LocalDateTime getSenhaAlteradaEm() {
+		return senhaAlteradaEm;
 	}
 
 	@Override

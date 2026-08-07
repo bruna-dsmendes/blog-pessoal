@@ -1,6 +1,9 @@
 package com.generation.blogpessoal.security;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +77,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 		});
 	}
 
+	/*
+	 * A sessão é um JWT sem estado, então trocar a senha não derrubaria quem já
+	 * está logado. Comparar a emissão do token com a marca de troca resolve, e
+	 * é o que dá sentido a pedir redefinição quando a conta foi invadida.
+	 */
+	private boolean emitidoAntesDaTrocaDeSenha(String token, UserDetails userDetails) {
+
+		if (!(userDetails instanceof UserDetailsImpl detalhes)
+				|| detalhes.getSenhaAlteradaEm() == null) {
+			return false;
+		}
+
+		Date emissao = jwtService.extractIssuedAt(token);
+
+		if (emissao == null) {
+			return false;
+		}
+
+		LocalDateTime momentoDaEmissao = LocalDateTime.ofInstant(
+				emissao.toInstant(), ZoneId.systemDefault());
+
+		return momentoDaEmissao.isBefore(detalhes.getSenhaAlteradaEm());
+	}
+
 	private void autenticar(HttpServletRequest request, String token) {
 
 		try {
@@ -86,6 +113,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
 			if (!jwtService.validateToken(token, userDetails)) {
+				return;
+			}
+
+			if (emitidoAntesDaTrocaDeSenha(token, userDetails)) {
+				log.debug("Token descartado: emitido antes da última troca de senha");
 				return;
 			}
 
